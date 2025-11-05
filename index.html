@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <title>导航管理系统终极版</title>
 <style>
-body { font-family: "Microsoft YaHei", sans-serif; padding: 20px; background: #f0f2f5; }
-h2 { color: #333; margin-bottom: 15px; }
-#searchArea { margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 5px; }
+body { font-family: "Microsoft YaHei", sans-serif; padding:20px; background:#f0f2f5; }
+h2 { color:#333; margin-bottom:15px; }
+#searchArea { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:15px; }
 #searchInput { padding:5px; width:250px; border-radius:5px; border:1px solid #ccc; }
-button.actionBtn { padding:6px 12px; cursor:pointer; border:none; border-radius:5px; color:#fff; font-weight:500; }
+button.actionBtn { padding:6px 12px; cursor:pointer; border:none; border-radius:5px; color:#fff; font-weight:500; display:flex; align-items:center; gap:4px; }
 button.clearBtn{ background:#6c757d; }
 button.resetBtn{ background:#28a745; }
 button.batchIconBtn{ background:#ffc107; color:#000; }
@@ -16,12 +16,12 @@ button.batchColorBtn{ background:#17a2b8; }
 button.batchDeleteBtn{ background:#dc3545; }
 button.batchNameBtn{ background:#007bff; }
 button.batchPathBtn{ background:#28a745; }
-#preview { margin-bottom: 20px; padding: 10px; background: #fff; border-radius: 8px; border: 1px solid #ccc; min-height:40px; display:flex; flex-wrap:wrap; gap:5px; }
-#preview a { padding:3px 6px; border-radius:5px; text-decoration:none; font-weight:500; }
+#preview { margin-bottom:20px; padding:10px; background:#fff; border-radius:8px; border:1px solid #ccc; min-height:40px; display:flex; flex-wrap:wrap; gap:5px; }
+#preview a { padding:3px 6px; border-radius:5px; text-decoration:none; font-weight:500; cursor:pointer; }
 #preview a.active { border:2px solid #007bff; font-weight:bold; }
-#nav { user-select: none; display:flex; flex-direction:column; gap:5px; }
-.nav-item { display: flex; align-items: center; gap:5px; padding:5px; background: #fff; border-radius:5px; border:1px solid #ccc; }
-.nav-item.dragging { opacity:0.5; }
+#nav { user-select:none; display:flex; flex-direction:column; gap:5px; }
+.nav-item { display:flex; align-items:center; gap:5px; padding:5px; background:#fff; border-radius:5px; border:1px solid #ccc; }
+.nav-item.dragging { opacity:0.5; background:#e9ecef; }
 .nav-item input { padding:4px 6px; border-radius:4px; border:1px solid #ccc; }
 .nav-item input.color-input { width:60px; }
 .nav-item input.active { border:2px solid #007bff; }
@@ -29,18 +29,18 @@ button.batchPathBtn{ background:#28a745; }
 .nav-item button.delete { background:#dc3545; }
 #addArea { margin-top:10px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
 #addArea input { padding:5px; border-radius:4px; border:1px solid #ccc; }
-#addArea button { padding:6px 12px; border:none; border-radius:5px; cursor:pointer; color:#fff; font-weight:500; }
+#addArea button { padding:6px 12px; border:none; border-radius:5px; cursor:pointer; color:#fff; font-weight:500; display:flex; align-items:center; gap:4px; }
 #addBtn { background:#007bff; }
 #exportBtn { background:#17a2b8; }
 #emojiPanel { display:none; position:absolute; background:#fff; border:1px solid #ccc; padding:5px; border-radius:5px; max-width:300px; flex-wrap:wrap; z-index:1000; display:flex; }
 #emojiPanel span { cursor:pointer; font-size:18px; margin:2px; }
-#confirmationDialog { display:none; position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.5); justify-content:center; align-items:center; }
-#confirmationDialog .dialogBox { background:#fff; padding:20px; border-radius:8px; display:flex; flex-direction:column; align-items:center; gap:10px; }
-#confirmationDialog button { padding:6px 12px; border:none; border-radius:5px; cursor:pointer; color:#fff; font-weight:500; }
+#confirmationDialog, #batchNameDialog, #batchPathDialog { display:none; position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+.dialogBox { background:#fff; padding:20px; border-radius:8px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.dialogBox button { padding:6px 12px; border:none; border-radius:5px; cursor:pointer; color:#fff; font-weight:500; }
 #confirmDeleteBtn { background:#dc3545; }
 #cancelDeleteBtn { background:#6c757d; }
-#batchNameDialog, #batchPathDialog { display:none; position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.5); justify-content:center; align-items:center; }
-#batchNameDialog .dialogBox, #batchPathDialog .dialogBox { background:#fff; padding:20px; border-radius:8px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+#confirmBatchName, #confirmBatchPath { background:#007bff; }
+#cancelBatchName, #cancelBatchPath { background:#6c757d; }
 </style>
 </head>
 <body>
@@ -49,13 +49,13 @@ button.batchPathBtn{ background:#28a745; }
 
 <div id="searchArea">
   <input id="searchInput" placeholder="搜索导航（名称/路径/图标）">
-  <button class="actionBtn clearBtn" id="clearSearch">清空搜索</button>
-  <button class="actionBtn resetBtn" id="resetOrder">重置顺序</button>
-  <button class="actionBtn batchIconBtn" id="batchIconBtn">批量修改图标</button>
-  <button class="actionBtn batchColorBtn" id="batchColorBtn">批量修改颜色</button>
-  <button class="actionBtn batchDeleteBtn" id="batchDeleteBtn">批量删除</button>
-  <button class="actionBtn batchNameBtn" id="batchNameBtn">批量修改名称</button>
-  <button class="actionBtn batchPathBtn" id="batchPathBtn">批量修改路径</button>
+  <button class="actionBtn clearBtn" id="clearSearch">🧹清空搜索</button>
+  <button class="actionBtn resetBtn" id="resetOrder">🔄重置顺序</button>
+  <button class="actionBtn batchIconBtn" id="batchIconBtn">🎨批量修改图标</button>
+  <button class="actionBtn batchColorBtn" id="batchColorBtn">🌈批量修改颜色</button>
+  <button class="actionBtn batchDeleteBtn" id="batchDeleteBtn">🗑批量删除</button>
+  <button class="actionBtn batchNameBtn" id="batchNameBtn">✏️批量修改名称</button>
+  <button class="actionBtn batchPathBtn" id="batchPathBtn">🔗批量修改路径</button>
 </div>
 
 <div id="preview"></div>
@@ -67,16 +67,16 @@ button.batchPathBtn{ background:#28a745; }
     <input id="newName" placeholder="导航名称">
     <input id="newPath" placeholder="路径">
     <input id="newIcon" placeholder="图标/Emoji" readonly>
-    <input id="newColor" type="color">
-    <button id="addBtn">添加导航</button>
-    <button id="exportBtn">导出导航</button>
+    <input id="newColor" type="color" value="#007bff">
+    <button id="addBtn">➕添加导航</button>
+    <button id="exportBtn">💾导出导航</button>
     <input type="file" id="importFile" accept=".json">
   </div>
 </div>
 
 <div id="emojiPanel"></div>
-<input type="color" id="colorPicker">
 
+<!-- 弹窗 -->
 <div id="confirmationDialog">
   <div class="dialogBox">
     <h3>确认删除选中的导航？</h3>
@@ -85,7 +85,6 @@ button.batchPathBtn{ background:#28a745; }
   </div>
 </div>
 
-<!-- 批量修改名称的弹窗 -->
 <div id="batchNameDialog">
   <div class="dialogBox">
     <h3>批量修改导航名称</h3>
@@ -95,7 +94,6 @@ button.batchPathBtn{ background:#28a745; }
   </div>
 </div>
 
-<!-- 批量修改路径的弹窗 -->
 <div id="batchPathDialog">
   <div class="dialogBox">
     <h3>批量修改导航路径</h3>
@@ -106,258 +104,187 @@ button.batchPathBtn{ background:#28a745; }
 </div>
 
 <script>
-// 初始化导航数据
-let defaultWorkers = [
-  { name: "首页", path: "/", icon: "🏠", color: "#007bff" },
-  { name: "关于我们", path: "/about", icon: "ℹ️", color: "#17a2b8" }
+// ====================== 数据初始化 ======================
+let defaultWorkers=[
+  {name:"首页", path:"/", icon:"🏠", color:"#007bff"},
+  {name:"关于我们", path:"/about", icon:"ℹ️", color:"#17a2b8"}
 ];
-let workers = JSON.parse(localStorage.getItem("workers")) || [...defaultWorkers];
+let workers=JSON.parse(localStorage.getItem("workers"))||[...defaultWorkers];
 
-// 获取页面元素
-const nav = document.getElementById("nav");
-const preview = document.getElementById("preview");
-const addBtn = document.getElementById("addBtn");
-const newName = document.getElementById("newName");
-const newPath = document.getElementById("newPath");
-const newIcon = document.getElementById("newIcon");
-const newColor = document.getElementById("newColor");
-const exportBtn = document.getElementById("exportBtn");
-const importFile = document.getElementById("importFile");
-const emojiPanel = document.getElementById("emojiPanel");
-const searchInput = document.getElementById("searchInput");
-const clearSearchBtn = document.getElementById("clearSearch");
-const resetOrderBtn = document.getElementById("resetOrder");
-const batchIconBtn = document.getElementById("batchIconBtn");
-const batchColorBtn = document.getElementById("batchColorBtn");
-const batchDeleteBtn = document.getElementById("batchDeleteBtn");
-const batchNameBtn = document.getElementById("batchNameBtn");
-const batchPathBtn = document.getElementById("batchPathBtn");
-const confirmationDialog = document.getElementById("confirmationDialog");
-const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+// ====================== 元素 ======================
+const nav=document.getElementById("nav");
+const preview=document.getElementById("preview");
+const addBtn=document.getElementById("addBtn");
+const newName=document.getElementById("newName");
+const newPath=document.getElementById("newPath");
+const newIcon=document.getElementById("newIcon");
+const newColor=document.getElementById("newColor");
+const exportBtn=document.getElementById("exportBtn");
+const importFile=document.getElementById("importFile");
+const emojiPanel=document.getElementById("emojiPanel");
+const searchInput=document.getElementById("searchInput");
+const clearSearchBtn=document.getElementById("clearSearch");
+const resetOrderBtn=document.getElementById("resetOrder");
+const batchIconBtn=document.getElementById("batchIconBtn");
+const batchColorBtn=document.getElementById("batchColorBtn");
+const batchDeleteBtn=document.getElementById("batchDeleteBtn");
+const batchNameBtn=document.getElementById("batchNameBtn");
+const batchPathBtn=document.getElementById("batchPathBtn");
+const confirmationDialog=document.getElementById("confirmationDialog");
+const confirmDeleteBtn=document.getElementById("confirmDeleteBtn");
+const cancelDeleteBtn=document.getElementById("cancelDeleteBtn");
+const batchNameDialog=document.getElementById("batchNameDialog");
+const batchNameInput=document.getElementById("batchNameInput");
+const confirmBatchName=document.getElementById("confirmBatchName");
+const cancelBatchName=document.getElementById("cancelBatchName");
+const batchPathDialog=document.getElementById("batchPathDialog");
+const batchPathInput=document.getElementById("batchPathInput");
+const confirmBatchPath=document.getElementById("confirmBatchPath");
+const cancelBatchPath=document.getElementById("cancelBatchPath");
 
-// 批量修改名称/路径弹窗
-const batchNameDialog = document.getElementById("batchNameDialog");
-const batchNameInput = document.getElementById("batchNameInput");
-const confirmBatchName = document.getElementById("confirmBatchName");
-const cancelBatchName = document.getElementById("cancelBatchName");
+// ====================== 状态 ======================
+let activeIndex=-1;
+let dragSrcIndex=null;
+let currentIconInput=null;
+let selectedIndexes=new Set();
+let batchMode=false;
 
-const batchPathDialog = document.getElementById("batchPathDialog");
-const batchPathInput = document.getElementById("batchPathInput");
-const confirmBatchPath = document.getElementById("confirmBatchPath");
-const cancelBatchPath = document.getElementById("cancelBatchPath");
-
-let activeIndex = -1;
-let dragSrcIndex = null;
-let currentIconInput = null;
-let selectedIndexes = new Set();
-let batchMode = false;
-const emojis = ["🏠", "ℹ️", "📄", "📞", "💡", "🛒", "⭐", "⚙️", "📧", "🔗"];
-emojis.forEach(e => {
-  const span = document.createElement("span");
-  span.textContent = e;
-  span.onclick = () => {
-    if (currentIconInput) {
-      if (batchMode) { selectedIndexes.forEach(i => { workers[i].icon = e; }); }
-      else { currentIconInput.value = e; }
-      batchMode = false;
+// ====================== Emoji ======================
+const emojis=["🏠","ℹ️","📄","📞","💡","🛒","⭐","⚙️","📧","🔗"];
+emojis.forEach(e=>{
+  const span=document.createElement("span");
+  span.textContent=e;
+  span.onclick=()=>{
+    if(currentIconInput){
+      if(batchMode){ selectedIndexes.forEach(i=>workers[i].icon=e); }
+      else{ currentIconInput.value=e; }
+      batchMode=false;
       selectedIndexes.clear();
       renderNav();
-      emojiPanel.style.display = "none";
+      emojiPanel.style.display="none";
     }
   };
   emojiPanel.appendChild(span);
 });
 
-// 更新 localStorage
-function save() { localStorage.setItem("workers", JSON.stringify(workers)); }
+// ====================== 保存 ======================
+function save(){ localStorage.setItem("workers",JSON.stringify(workers)); }
 
-// 渲染导航列表
-function renderNav() {
-  nav.innerHTML = "";
-  preview.innerHTML = "";
-  const keyword = searchInput.value.trim().toLowerCase();
-  const filtered = workers.filter(item => item.name.toLowerCase().includes(keyword) || item.path.toLowerCase().includes(keyword) || (item.icon && item.icon.toLowerCase().includes(keyword)));
-  filtered.forEach(item => {
-    const realIndex = workers.indexOf(item);
-    const div = document.createElement("div");
-    div.className = "nav-item";
-    div.draggable = true;
+// ====================== 渲染 ======================
+function renderNav(){
+  nav.innerHTML="";
+  preview.innerHTML="";
+  const keyword=searchInput.value.trim().toLowerCase();
+  const filtered=workers.filter(item=>item.name.toLowerCase().includes(keyword) || item.path.toLowerCase().includes(keyword) || (item.icon && item.icon.toLowerCase().includes(keyword)));
+  filtered.forEach(item=>{
+    const realIndex=workers.indexOf(item);
+    const div=document.createElement("div");
+    div.className="nav-item";
+    div.draggable=true;
 
-    const selectCheckbox = document.createElement("input");
-    selectCheckbox.type = "checkbox";
-    selectCheckbox.checked = selectedIndexes.has(realIndex);
-    selectCheckbox.onchange = e => { if (e.target.checked) selectedIndexes.add(realIndex); else selectedIndexes.delete(realIndex); };
+    const checkbox=document.createElement("input");
+    checkbox.type="checkbox";
+    checkbox.checked=selectedIndexes.has(realIndex);
+    checkbox.onchange=e=>{ e.target.checked ? selectedIndexes.add(realIndex) : selectedIndexes.delete(realIndex); };
 
-    const nameInput = document.createElement("input");
-    nameInput.value = item.name;
-    nameInput.className = (activeIndex === realIndex) ? "active" : "";
-    nameInput.oninput = e => { item.name = e.target.value; save(); renderNav(); };
+    const nameInput=document.createElement("input");
+    nameInput.value=item.name;
+    nameInput.className=(activeIndex===realIndex)?"active":"";
+    nameInput.oninput=e=>{ item.name=e.target.value; save(); renderNav(); };
 
-    const pathInput = document.createElement("input");
-    pathInput.value = item.path;
-    pathInput.className = (activeIndex === realIndex) ? "active" : "";
-    pathInput.oninput = e => { item.path = e.target.value; save(); renderNav(); };
+    const pathInput=document.createElement("input");
+    pathInput.value=item.path;
+    pathInput.className=(activeIndex===realIndex)?"active":"";
+    pathInput.oninput=e=>{ item.path=e.target.value; save(); renderNav(); };
 
-    const iconInput = document.createElement("input");
-    iconInput.value = item.icon || "🔗";
-    iconInput.readOnly = true;
-    iconInput.onclick = () => {
-      currentIconInput = iconInput;
-      batchMode = false;
-      emojiPanel.style.display = "flex";
-      const rect = iconInput.getBoundingClientRect();
-      emojiPanel.style.top = (rect.bottom + window.scrollY) + "px";
-      emojiPanel.style.left = (rect.left + window.scrollX) + "px";
+    const iconInput=document.createElement("input");
+    iconInput.value=item.icon||"🔗";
+    iconInput.readOnly=true;
+    iconInput.onclick=()=>{
+      currentIconInput=iconInput; batchMode=false;
+      emojiPanel.style.display="flex";
+      const rect=iconInput.getBoundingClientRect();
+      emojiPanel.style.top=(rect.bottom+window.scrollY)+"px";
+      emojiPanel.style.left=(rect.left+window.scrollX)+"px";
     };
 
-    const colorInput = document.createElement("input");
-    colorInput.type = "color";
-    colorInput.value = item.color || "#007bff";
-    colorInput.className = "color-input";
-    colorInput.oninput = e => { item.color = e.target.value; save(); renderNav(); };
+    const colorInput=document.createElement("input");
+    colorInput.type="color"; colorInput.value=item.color||"#007bff"; colorInput.className="color-input";
+    colorInput.oninput=e=>{ item.color=e.target.value; save(); renderNav(); };
 
-    const delBtn = document.createElement("button");
-    delBtn.className = "delete";
-    delBtn.textContent = "×";
-    delBtn.onclick = () => {
-      if (confirm("确认删除此导航吗？")) {
-        workers.splice(realIndex, 1);
-        selectedIndexes.delete(realIndex);
-        save();
-        renderNav();
-      }
-    };
+    const delBtn=document.createElement("button"); delBtn.className="delete"; delBtn.textContent="×";
+    delBtn.onclick=()=>{ if(confirm("确认删除此导航吗？")){ workers.splice(realIndex,1); selectedIndexes.delete(realIndex); save(); renderNav(); }};
 
-    div.append(selectCheckbox, nameInput, pathInput, iconInput, colorInput, delBtn);
+    div.append(checkbox,nameInput,pathInput,iconInput,colorInput,delBtn);
     nav.appendChild(div);
 
-    const link = document.createElement("a");
-    link.textContent = (item.icon ? " " + item.icon + " " : "") + item.name;
-    link.href = item.path;
-    link.style.color = item.color || "#007bff";
+    const link=document.createElement("a");
+    link.textContent=(item.icon?" "+item.icon+" ":"")+item.name;
+    link.href=item.path;
+    link.style.color=item.color||"#007bff";
+    link.onclick=e=>{ e.preventDefault(); activeIndex=realIndex; renderNav(); };
     preview.appendChild(link);
 
-    div.addEventListener("dragstart", () => { dragSrcIndex = realIndex; div.classList.add("dragging"); });
-    div.addEventListener("dragend", () => { div.classList.remove("dragging"); });
-    div.addEventListener("dragover", e => e.preventDefault());
-    div.addEventListener("drop", () => {
-      if (dragSrcIndex !== null && dragSrcIndex !== realIndex) {
-        const dragged = workers[dragSrcIndex];
-        workers.splice(dragSrcIndex, 1);
-        workers.splice(realIndex, 0, dragged);
-        dragSrcIndex = null;
-        save();
-        renderNav();
+    div.addEventListener("dragstart",()=>{ dragSrcIndex=realIndex; div.classList.add("dragging"); });
+    div.addEventListener("dragend",()=>{ div.classList.remove("dragging"); });
+    div.addEventListener("dragover",e=>e.preventDefault());
+    div.addEventListener("drop",()=>{
+      if(dragSrcIndex!==null && dragSrcIndex!==realIndex){
+        const dragged=workers[dragSrcIndex];
+        workers.splice(dragSrcIndex,1);
+        workers.splice(realIndex,0,dragged);
+        dragSrcIndex=null;
+        save(); renderNav();
       }
     });
   });
   save();
 }
 
-// 添加导航
-addBtn.onclick = () => {
-  const name = newName.value.trim();
-  const path = newPath.value.trim();
-  const icon = newIcon.value.trim() || "🔗";
-  const color = newColor.value;
-  if (name && path) {
-    workers.push({ name, path, icon, color });
-    newName.value = newPath.value = newIcon.value = '';
-    renderNav();
-  } else alert("请确保导航名称和路径不能为空！");
+// ====================== 功能 ======================
+addBtn.onclick=()=>{
+  const name=newName.value.trim();
+  const path=newPath.value.trim()||"/";
+  const icon=newIcon.value.trim()||"🔗";
+  const color=newColor.value||"#007bff";
+  if(name){ workers.push({name,path,icon,color}); newName.value=newPath.value=newIcon.value=''; renderNav(); } else alert("导航名称不能为空！");
 };
 
-// 导出
-exportBtn.onclick = () => {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(workers, null, 2));
-  const dlAnchor = document.createElement('a');
-  dlAnchor.setAttribute("href", dataStr);
-  dlAnchor.setAttribute("download", "navigation.json");
-  dlAnchor.click();
+exportBtn.onclick=()=>{
+  const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(workers,null,2));
+  const dlAnchor=document.createElement('a'); dlAnchor.href=dataStr; dlAnchor.download="navigation.json"; dlAnchor.click();
 };
 
-// 导入
-importFile.onchange = e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = event => {
-    try {
-      const json = JSON.parse(event.target.result);
-      if (Array.isArray(json)) {
-        workers = json;
-        save();
-        renderNav();
-        alert("导入成功！");
-      } else alert("JSON 格式不正确");
-    } catch (err) { alert("解析 JSON 失败"); }
-  };
-  reader.readAsText(file);
+importFile.onchange=e=>{
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=event=>{
+    try{ const json=JSON.parse(event.target.result); if(Array.isArray(json)){ workers=json; save(); renderNav(); alert("导入成功！"); } else alert("JSON 格式不正确"); }catch(err){alert("解析 JSON 失败");}
+  }; reader.readAsText(file);
 };
 
-// 搜索与清空
-searchInput.oninput = renderNav;
-clearSearchBtn.onclick = () => { searchInput.value = ""; renderNav(); };
+searchInput.oninput=renderNav;
+clearSearchBtn.onclick=()=>{ searchInput.value=""; renderNav(); };
+resetOrderBtn.onclick=()=>{ workers=[...defaultWorkers]; save(); renderNav(); };
 
-// 重置顺序
-resetOrderBtn.onclick = () => { workers = [...defaultWorkers]; save(); renderNav(); };
+// 批量操作
+batchIconBtn.onclick=()=>{ if(selectedIndexes.size===0) return alert("请先选择导航"); batchMode=true; emojiPanel.style.display="flex"; };
+batchColorBtn.onclick=()=>{ if(selectedIndexes.size===0) return alert("请先选择导航"); const color=prompt("输入颜色","#ffffff"); if(color){ selectedIndexes.forEach(i=>workers[i].color=color); selectedIndexes.clear(); renderNav(); }};
+batchDeleteBtn.onclick=()=>{ if(selectedIndexes.size===0) return alert("请先选择导航"); confirmationDialog.style.display="flex"; };
+confirmDeleteBtn.onclick=()=>{ workers=workers.filter((_,i)=>!selectedIndexes.has(i)); selectedIndexes.clear(); renderNav(); confirmationDialog.style.display="none"; };
+cancelDeleteBtn.onclick=()=>{ confirmationDialog.style.display="none"; };
 
-// 批量修改图标
-batchIconBtn.onclick = () => {
-  if (selectedIndexes.size === 0) return alert("请先选择要修改的导航");
-  batchMode = true;
-  emojiPanel.style.display = "flex";
-};
+batchNameBtn.onclick=()=>{ if(selectedIndexes.size===0) return alert("请先选择导航"); batchNameDialog.style.display="flex"; };
+cancelBatchName.onclick=()=>{ batchNameDialog.style.display="none"; };
+confirmBatchName.onclick=()=>{ const val=batchNameInput.value.trim(); if(val){ selectedIndexes.forEach(i=>workers[i].name=val); selectedIndexes.clear(); renderNav(); batchNameDialog.style.display="none"; }};
 
-// 批量修改颜色
-batchColorBtn.onclick = () => {
-  if (selectedIndexes.size === 0) return alert("请先选择要修改的导航");
-  const color = prompt("请输入颜色代码或选择颜色", "#ffffff");
-  if (color) { selectedIndexes.forEach(i => { workers[i].color = color; }); selectedIndexes.clear(); renderNav(); }
-};
+batchPathBtn.onclick=()=>{ if(selectedIndexes.size===0) return alert("请先选择导航"); batchPathDialog.style.display="flex"; };
+cancelBatchPath.onclick=()=>{ batchPathDialog.style.display="none"; };
+confirmBatchPath.onclick=()=>{ const val=batchPathInput.value.trim(); if(val){ selectedIndexes.forEach(i=>workers[i].path=val); selectedIndexes.clear(); renderNav(); batchPathDialog.style.display="none"; }};
 
-// 批量删除
-batchDeleteBtn.onclick = () => {
-  if (selectedIndexes.size === 0) return alert("请先选择要删除的导航项");
-  confirmationDialog.style.display = "flex";
-};
-confirmDeleteBtn.onclick = () => { workers = workers.filter((_, i) => !selectedIndexes.has(i)); selectedIndexes.clear(); renderNav(); confirmationDialog.style.display = "none"; };
-cancelDeleteBtn.onclick = () => { confirmationDialog.style.display = "none"; };
+// 点击空白隐藏 emoji
+document.addEventListener("click",e=>{ if(!emojiPanel.contains(e.target) && e.target!==currentIconInput){ emojiPanel.style.display="none"; batchMode=false; } });
 
-// 批量修改名称
-batchNameBtn.onclick = () => {
-  if (selectedIndexes.size === 0) return alert("请先选择要修改的导航");
-  batchNameDialog.style.display = "flex";
-};
-cancelBatchName.onclick = () => { batchNameDialog.style.display = "none"; };
-confirmBatchName.onclick = () => {
-  const newNameValue = batchNameInput.value.trim();
-  if (newNameValue) {
-    selectedIndexes.forEach(i => { workers[i].name = newNameValue; });
-    selectedIndexes.clear();
-    renderNav();
-    batchNameDialog.style.display = "none";
-  }
-};
-
-// 批量修改路径
-batchPathBtn.onclick = () => {
-  if (selectedIndexes.size === 0) return alert("请先选择要修改的导航");
-  batchPathDialog.style.display = "flex";
-};
-cancelBatchPath.onclick = () => { batchPathDialog.style.display = "none"; };
-confirmBatchPath.onclick = () => {
-  const newPathValue = batchPathInput.value.trim();
-  if (newPathValue) {
-    selectedIndexes.forEach(i => { workers[i].path = newPathValue; });
-    selectedIndexes.clear();
-    renderNav();
-    batchPathDialog.style.display = "none";
-  }
-};
-
-// 初始化渲染
 renderNav();
 </script>
 </body>
