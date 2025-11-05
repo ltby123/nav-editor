@@ -7,8 +7,8 @@
     body { font-family: "Microsoft YaHei", sans-serif; padding: 20px; background: #f8f9fa; }
     h2 { color: #333; margin-bottom: 10px; }
     #preview { margin-bottom: 20px; padding: 10px; border-bottom: 2px solid #ccc; background: #fff; border-radius: 8px; }
-    #preview a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: 500; }
-    #preview a:hover { text-decoration: underline; }
+    #preview a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: 500; cursor: pointer; }
+    #preview a.active { color: #dc3545; font-weight: bold; }
     #nav input { margin: 3px; width: 120px; padding: 5px; }
     button { margin-left: 5px; padding: 5px 10px; border: none; color: #fff; border-radius: 5px; cursor: pointer; }
     button:hover { opacity: 0.85; }
@@ -39,7 +39,7 @@
   </div>
 
   <script>
-    // 读取本地存储或初始化
+    // 初始化数据
     let workers = JSON.parse(localStorage.getItem("workers")) || [
       { name: "首页", path: "/" },
       { name: "关于我们", path: "/about" }
@@ -53,16 +53,18 @@
     const exportBtn = document.getElementById("exportBtn");
     const importFile = document.getElementById("importFile");
 
-    // 保存到 localStorage
-    function save() { localStorage.setItem("workers", JSON.stringify(workers)); }
+    let activeIndex = -1; // 当前高亮项
 
-    // 渲染导航和预览
+    function save() {
+      localStorage.setItem("workers", JSON.stringify(workers));
+    }
+
     function renderNav() {
       nav.innerHTML = "";
       preview.innerHTML = "";
 
       workers.forEach((item, index) => {
-        // 编辑输入框
+        // ==== 编辑区 ====
         const nameInput = document.createElement("input");
         nameInput.value = item.name;
         nameInput.oninput = (e) => { workers[index].name = e.target.value; save(); renderNav(); };
@@ -74,14 +76,25 @@
         const delBtn = document.createElement("button");
         delBtn.textContent = "×";
         delBtn.className = "delete";
-        delBtn.onclick = () => { workers.splice(index,1); save(); renderNav(); };
+        delBtn.onclick = () => { 
+          workers.splice(index,1); 
+          if(activeIndex===index) activeIndex=-1;
+          save(); 
+          renderNav(); 
+        };
 
         nav.append(nameInput, pathInput, delBtn, document.createElement("br"));
 
-        // 预览导航
+        // ==== 预览区 ====
         const link = document.createElement("a");
         link.textContent = item.name;
-        link.href = item.path;
+        link.href = "#"; // 阻止跳转
+        link.className = (activeIndex===index) ? "active" : "";
+        link.onclick = (e) => {
+          e.preventDefault();
+          activeIndex = index;
+          renderNav();
+        };
         preview.appendChild(link);
       });
 
@@ -114,7 +127,12 @@
       reader.onload = (event) => {
         try {
           const json = JSON.parse(event.target.result);
-          if(Array.isArray(json)) { workers = json; save(); renderNav(); }
+          if(Array.isArray(json)) { 
+            workers = json; 
+            save(); 
+            renderNav(); 
+            alert("导入成功！"); 
+          }
           else { alert("JSON 格式不正确"); }
         } catch(err) { alert("解析 JSON 失败"); }
       };
