@@ -110,14 +110,15 @@ let activeIndex = -1;
 let dragSrcIndex = null;
 let currentIconInput = null;
 let selectedIndexes = new Set();
+let batchMode = false;
 
-const emojis = ["🏠", "ℹ️", "📄", "📞", "💡", "🛒", "⭐", "⚙️", "📧", "🔗"];
+const emojis = ["🏠","ℹ️","📄","📞","💡","🛒","⭐","⚙️","📧","🔗"];
 emojis.forEach(e => {
   const span = document.createElement("span");
   span.textContent = e;
   span.onclick = () => {
-    if (currentIconInput) {
-      if (batchMode) {
+    if(currentIconInput){
+      if(batchMode){
         selectedIndexes.forEach(i => { workers[i].icon = e; });
       } else {
         currentIconInput.value = e;
@@ -130,21 +131,20 @@ emojis.forEach(e => {
   };
   emojiPanel.appendChild(span);
 });
-let batchMode = false;
 
-function save() { localStorage.setItem("workers", JSON.stringify(workers)); }
+function save(){ localStorage.setItem("workers", JSON.stringify(workers)); }
 
-function renderNav() {
+function renderNav(){
   nav.innerHTML = "";
   preview.innerHTML = "";
   const keyword = searchInput.value.trim().toLowerCase();
-  const filtered = workers.filter(item => {
-    return item.name.toLowerCase().includes(keyword) ||
-           item.path.toLowerCase().includes(keyword) ||
-           (item.icon && item.icon.toLowerCase().includes(keyword));
-  });
+  const filtered = workers.filter(item => 
+    item.name.toLowerCase().includes(keyword) || 
+    item.path.toLowerCase().includes(keyword) || 
+    (item.icon && item.icon.toLowerCase().includes(keyword))
+  );
 
-  filtered.forEach((item, index) => {
+  filtered.forEach((item) => {
     const realIndex = workers.indexOf(item);
     const div = document.createElement("div");
     div.className = "nav-item";
@@ -154,113 +154,156 @@ function renderNav() {
     selectCheckbox.type = "checkbox";
     selectCheckbox.checked = selectedIndexes.has(realIndex);
     selectCheckbox.onchange = e => {
-      if (e.target.checked) selectedIndexes.add(realIndex);
+      if(e.target.checked) selectedIndexes.add(realIndex);
       else selectedIndexes.delete(realIndex);
     };
 
     const nameInput = document.createElement("input");
     nameInput.value = item.name;
-    nameInput.className = (activeIndex === realIndex) ? "active" : "";
-    nameInput.oninput = e => { item.name = e.target.value; renderNav(); };
-    nameInput.onclick = () => { activeIndex = (activeIndex === realIndex) ? -1 : realIndex; renderNav(); };
+    nameInput.className = (activeIndex===realIndex)?"active":"";
+    nameInput.oninput = e => { item.name = e.target.value; save(); renderNav(); };
 
     const pathInput = document.createElement("input");
     pathInput.value = item.path;
-    pathInput.className = (activeIndex === realIndex) ? "active" : "";
-    pathInput.oninput = e => { item.path = e.target.value; renderNav(); };
+    pathInput.className = (activeIndex===realIndex)?"active":"";
+    pathInput.oninput = e => { item.path = e.target.value; save(); renderNav(); };
 
     const iconInput = document.createElement("input");
-    iconInput.value = item.icon;
-    iconInput.className = "color-input";
+    iconInput.value = item.icon || "🔗";
     iconInput.readOnly = true;
     iconInput.onclick = () => {
       currentIconInput = iconInput;
-      emojiPanel.style.display = "block";
-      emojiPanel.style.left = iconInput.getBoundingClientRect().left + "px";
-      emojiPanel.style.top = iconInput.getBoundingClientRect().bottom + "px";
+      emojiPanel.style.display = "flex";
+      const rect = iconInput.getBoundingClientRect();
+      emojiPanel.style.top = (rect.bottom + window.scrollY) + "px";
+      emojiPanel.style.left = (rect.left + window.scrollX) + "px";
     };
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "delete";
-    deleteBtn.textContent = "×";
-    deleteBtn.onclick = () => {
-      selectedIndexes.clear();
-      workers.splice(realIndex, 1);
-      renderNav();
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = item.color || "#007bff";
+    colorInput.className = "color-input";
+    colorInput.oninput = e => { item.color = e.target.value; save(); renderNav(); };
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete";
+    delBtn.textContent = "×";
+    delBtn.onclick = () => { 
+      if(confirm("确认删除此导航吗？")){
+        workers.splice(realIndex,1); 
+        selectedIndexes.delete(realIndex); 
+        save(); renderNav();
+      }
     };
 
-    div.append(selectCheckbox, nameInput, pathInput, iconInput, deleteBtn);
+    div.append(selectCheckbox, nameInput, pathInput, iconInput, colorInput, delBtn);
     nav.appendChild(div);
 
-    const previewLink = document.createElement("a");
-    previewLink.href = item.path;
-    previewLink.textContent = item.name;
-    previewLink.style.color = item.color;
-    previewLink.style.fontWeight = "bold";
-    previewLink.style.fontSize = "16px";
-    preview.appendChild(previewLink);
+    const link = document.createElement("a");
+    link.textContent = (item.icon ? item.icon+" ":"") + item.name;
+    link.href = item.path;
+    link.style.color = item.color || "#007bff";
+    preview.appendChild(link);
+
+    // 拖拽
+    div.addEventListener("dragstart",()=>{ dragSrcIndex=realIndex; div.classList.add("dragging"); });
+    div.addEventListener("dragend",()=>{ div.classList.remove("dragging"); });
+    div.addEventListener("dragover",e=>e.preventDefault());
+    div.addEventListener("drop",()=>{
+      if(dragSrcIndex!==null && dragSrcIndex!==realIndex){
+        const dragged=workers[dragSrcIndex];
+        workers.splice(dragSrcIndex,1);
+        workers.splice(realIndex,0,dragged);
+        dragSrcIndex=null;
+        save(); renderNav();
+      }
+    });
   });
+  save();
 }
 
+// 添加导航
+addBtn.onclick = () => {
+  const name = newName.value.trim();
+  const path = newPath.value.trim();
+  const icon = newIcon.value.trim() || "🔗"; // 默认图标
+  const color = newColor.value;
+
+  if(name && path){
+    workers.push({ name, path, icon, color });
+    newName.value = newPath.value = newIcon.value = '';
+    renderNav();
+  } else alert("请确保导航名称和路径不能为空！");
+};
+
+// 导出导航
+exportBtn.onclick = () => {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(workers,null,2));
+  const dlAnchor = document.createElement('a');
+  dlAnchor.setAttribute("href", dataStr);
+  dlAnchor.setAttribute("download", "navigation.json");
+  dlAnchor.click();
+};
+
+// 导入导航
+importFile.onchange = e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = event => {
+    try{
+      const json = JSON.parse(event.target.result);
+      if(Array.isArray(json)){ workers=json; save(); renderNav(); alert("导入成功！"); }
+      else alert("JSON 格式不正确");
+    } catch(err){ alert("解析 JSON 失败"); }
+  };
+  reader.readAsText(file);
+};
+
+// 搜索 & 清空搜索
+searchInput.oninput = renderNav;
+clearSearchBtn.onclick = () => { searchInput.value=""; renderNav(); };
+
+// 重置顺序
+resetOrderBtn.onclick = () => { workers = [...defaultWorkers]; save(); renderNav(); };
+
+// 批量修改图标
+batchIconBtn.onclick = () => { 
+  if(selectedIndexes.size===0) return alert("请先选择要修改的导航"); 
+  batchMode=true;
+  emojiPanel.style.display="flex"; 
+};
+
+// 批量修改颜色
+batchColorBtn.onclick = () => {
+  if(selectedIndexes.size===0) return alert("请先选择要修改的导航"); 
+  const color = prompt("请输入颜色代码或选择颜色", "#ffffff");
+  if(color){ 
+    selectedIndexes.forEach(i=>{ workers[i].color=color; }); 
+    selectedIndexes.clear(); 
+    renderNav(); 
+  }
+};
+
+// 批量删除
 batchDeleteBtn.onclick = () => {
-  if (selectedIndexes.size === 0) return alert("请先选择要删除的导航项");
-  confirmationDialog.style.display = "flex";
+  if(selectedIndexes.size===0) return alert("请先选择要删除的导航项");
+  confirmationDialog.style.display="flex";
 };
 
 confirmDeleteBtn.onclick = () => {
   workers = workers.filter((_, index) => !selectedIndexes.has(index));
   selectedIndexes.clear();
   renderNav();
-  confirmationDialog.style.display = "none";
+  confirmationDialog.style.display="none";
 };
 
-cancelDeleteBtn.onclick = () => { confirmationDialog.style.display = "none"; };
+cancelDeleteBtn.onclick = () => { confirmationDialog.style.display="none"; };
 
-addBtn.onclick = () => {
-  const name = newName.value.trim();
-  const path = newPath.value.trim();
-  const icon = newIcon.value.trim();
-  const color = newColor.value;
-  if (name && path) {
-    workers.push({ name, path, icon, color });
-    newName.value = newPath.value = newIcon.value = '';
-    renderNav();
-  }
-};
-
-exportBtn.onclick = () => {
-  const jsonStr = JSON.stringify(workers);
-  const blob = new Blob([jsonStr], { type: "application/json" });
-  const link = document.createElement("a");
-  link.href = 网站.createObjectURL(blob);
-  link.download = "navigation.json";
-  link.click();
-};
-
-importFile.onchange = e => {
-  const reader = new FileReader();
-  reader.onload = () => {
-    workers = JSON.parse(reader.result);
-    renderNav();
-  };
-  reader.readAsText(e.target.files[0]);
-};
-
-clearSearchBtn.onclick = () => { searchInput.value = ""; renderNav(); };
-
-resetOrderBtn.onclick = () => { workers = [...defaultWorkers]; renderNav(); };
-
-batchIconBtn.onclick = () => { batchMode = true; selectedIndexes.clear(); renderNav(); };
-
-batchColorBtn.onclick = () => {
-  const newColor = prompt("请输入颜色代码或选择颜色", "#ffffff");
-  if (newColor) {
-    workers.forEach(i => { if (selectedIndexes.has(workers.indexOf(i))) i.color = newColor; });
-    renderNav();
-  }
-};
-
-searchInput.oninput = renderNav;
+// 点击空白隐藏 emoji 面板
+document.addEventListener("click", e=>{
+  if(!emojiPanel.contains(e.target) && e.target!==currentIconInput){ emojiPanel.style.display="none"; batchMode=false; }
+});
 
 renderNav();
 </script>
