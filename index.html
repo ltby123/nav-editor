@@ -1,159 +1,71 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-<meta charset="UTF-8">
-<title>动态导航管理系统</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 40px;
-    background: #f6f7fb;
-  }
-
-  h2 {
-    color: #333;
-  }
-
-  #nav {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  }
-
-  #nav .item {
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-  }
-
-  #nav input {
-    margin-right: 10px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-
-  #nav button {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  #nav .delete {
-    background-color: #ff4d4f;
-    color: white;
-    margin-left: 5px;
-  }
-
-  #nav .save {
-    background-color: #1890ff;
-    color: white;
-  }
-
-  #controls {
-    margin-top: 20px;
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  }
-
-  #controls input {
-    margin-right: 5px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-
-  #controls button {
-    background-color: #52c41a;
-    color: white;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>导航管理系统</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { margin: 3px; }
+    button { margin-left: 5px; }
+  </style>
 </head>
 <body>
+  <h2>导航编辑器</h2>
 
-<h2>🔧 导航管理面板</h2>
+  <!-- 显示导航区域 -->
+  <div id="nav"></div>
+  <hr>
 
-<div id="nav"></div>
-
-<div id="controls">
-  <input type="text" id="name" placeholder="导航名称">
-  <input type="text" id="path" placeholder="路径">
+  <!-- 新增导航输入框 -->
+  <input id="newName" placeholder="导航名称">
+  <input id="newPath" placeholder="路径">
   <button id="addBtn">添加导航</button>
-</div>
 
-<script>
-  // --- 数据源 ---
-  let workers = [
-    { name: "首页", path: "/" },
-    { name: "关于我们", path: "/about" },
-    { name: "联系我们", path: "/contact" }
-  ];
+  <script>
+    let workers = [
+      { name: "首页", path: "/" },
+      { name: "关于我们", path: "/about" },
+    ];
 
-  const nav = document.getElementById("nav");
-  const nameInput = document.getElementById("name");
-  const pathInput = document.getElementById("path");
-  const addBtn = document.getElementById("addBtn");
+    const nav = document.getElementById("nav");
+    const addBtn = document.getElementById("addBtn");
+    const newName = document.getElementById("newName");
+    const newPath = document.getElementById("newPath");
 
-  // --- 渲染导航 ---
-  function renderNav() {
-    nav.innerHTML = "";
-    workers.forEach((worker, index) => {
-      const item = document.createElement("div");
-      item.className = "item";
+    function renderNav() {
+      nav.innerHTML = "";
+      workers.forEach((item, index) => {
+        const nameInput = document.createElement("input");
+        nameInput.value = item.name;
+        nameInput.oninput = (e) => workers[index].name = e.target.value;
 
-      const nameField = document.createElement("input");
-      nameField.value = worker.name;
-      nameField.oninput = (e) => workers[index].name = e.target.value;
+        const pathInput = document.createElement("input");
+        pathInput.value = item.path;
+        pathInput.oninput = (e) => workers[index].path = e.target.value;
 
-      const pathField = document.createElement("input");
-      pathField.value = worker.path;
-      pathField.oninput = (e) => workers[index].path = e.target.value;
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "×";
+        delBtn.onclick = () => {
+          workers.splice(index, 1);
+          renderNav();
+        };
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "delete";
-      deleteBtn.textContent = "删除";
-      deleteBtn.onclick = () => {
-        workers.splice(index, 1);
+        nav.append(nameInput, pathInput, delBtn, document.createElement("br"));
+      });
+    }
+
+    addBtn.onclick = () => {
+      if (newName.value && newPath.value) {
+        workers.push({ name: newName.value, path: newPath.value });
+        newName.value = "";
+        newPath.value = "";
         renderNav();
-      };
+      } else {
+        alert("请填写完整");
+      }
+    };
 
-      const saveBtn = document.createElement("button");
-      saveBtn.className = "save";
-      saveBtn.textContent = "保存";
-      saveBtn.onclick = () => {
-        alert(`已保存导航项：${worker.name} (${worker.path})`);
-      };
-
-      item.appendChild(nameField);
-      item.appendChild(pathField);
-      item.appendChild(saveBtn);
-      item.appendChild(deleteBtn);
-
-      nav.appendChild(item);
-    });
-  }
-
-  // --- 添加新导航 ---
-  addBtn.onclick = () => {
-    const name = nameInput.value.trim();
-    const path = pathInput.value.trim();
-    if (!name || !path) return alert("请填写完整信息");
-    workers.push({ name, path });
-    nameInput.value = "";
-    pathInput.value = "";
     renderNav();
-  };
-
-  renderNav();
-</script>
-
+  </script>
 </body>
 </html>
