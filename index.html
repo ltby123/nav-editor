@@ -1,94 +1,48 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>导航管理系统</title>
   <style>
-    body {
-      font-family: "Microsoft YaHei", sans-serif;
-      padding: 20px;
-      background: #f8f9fa;
-    }
-
-    h2 {
-      color: #333;
-      margin-bottom: 10px;
-    }
-
-    #preview {
-      margin-bottom: 20px;
-      padding: 10px;
-      border-bottom: 2px solid #ccc;
-      background: #fff;
-      border-radius: 8px;
-    }
-
-    #preview a {
-      margin-right: 15px;
-      text-decoration: none;
-      color: #007bff;
-      font-weight: 500;
-    }
-
-    #preview a:hover {
-      text-decoration: underline;
-    }
-
-    #nav input {
-      margin: 3px;
-      width: 120px;
-      padding: 5px;
-    }
-
-    button {
-      margin-left: 5px;
-      padding: 5px 10px;
-      background: #007bff;
-      border: none;
-      color: #fff;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #0056b3;
-    }
-
-    #editor {
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    #addArea {
-      margin-top: 10px;
-    }
+    body { font-family: "Microsoft YaHei", sans-serif; padding: 20px; background: #f8f9fa; }
+    h2 { color: #333; margin-bottom: 10px; }
+    #preview { margin-bottom: 20px; padding: 10px; border-bottom: 2px solid #ccc; background: #fff; border-radius: 8px; }
+    #preview a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: 500; }
+    #preview a:hover { text-decoration: underline; }
+    #nav input { margin: 3px; width: 120px; padding: 5px; }
+    button { margin-left: 5px; padding: 5px 10px; border: none; color: #fff; border-radius: 5px; cursor: pointer; }
+    button:hover { opacity: 0.85; }
+    #editor { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    #nav .delete { background: #dc3545; }
+    #nav .save { background: #28a745; }
+    #addArea { margin-top: 10px; }
+    #importFile { margin-left: 5px; }
   </style>
 </head>
-
 <body>
   <h2>导航管理系统</h2>
 
-  <!-- 实时预览区域 -->
+  <!-- 实时预览 -->
   <div id="preview"></div>
 
-  <!-- 编辑区域 -->
+  <!-- 编辑区 -->
   <div id="editor">
     <div id="nav"></div>
     <hr>
     <div id="addArea">
       <input id="newName" placeholder="导航名称">
       <input id="newPath" placeholder="路径">
-      <button id="addBtn">添加导航</button>
+      <button id="addBtn" style="background:#007bff;">添加导航</button>
+      <button id="exportBtn" style="background:#17a2b8;">导出导航</button>
+      <input type="file" id="importFile" accept=".json">
     </div>
   </div>
 
   <script>
-    // 从本地加载数据
+    // 读取本地存储或初始化
     let workers = JSON.parse(localStorage.getItem("workers")) || [
       { name: "首页", path: "/" },
-      { name: "关于我们", path: "/about" },
+      { name: "关于我们", path: "/about" }
     ];
 
     const nav = document.getElementById("nav");
@@ -96,11 +50,11 @@
     const addBtn = document.getElementById("addBtn");
     const newName = document.getElementById("newName");
     const newPath = document.getElementById("newPath");
+    const exportBtn = document.getElementById("exportBtn");
+    const importFile = document.getElementById("importFile");
 
-    // 保存到本地
-    function save() {
-      localStorage.setItem("workers", JSON.stringify(workers));
-    }
+    // 保存到 localStorage
+    function save() { localStorage.setItem("workers", JSON.stringify(workers)); }
 
     // 渲染导航和预览
     function renderNav() {
@@ -108,35 +62,23 @@
       preview.innerHTML = "";
 
       workers.forEach((item, index) => {
-        // ==== 编辑输入框 ====
+        // 编辑输入框
         const nameInput = document.createElement("input");
         nameInput.value = item.name;
-        nameInput.oninput = (e) => {
-          workers[index].name = e.target.value;
-          save();
-          renderNav();
-        };
+        nameInput.oninput = (e) => { workers[index].name = e.target.value; save(); renderNav(); };
 
         const pathInput = document.createElement("input");
         pathInput.value = item.path;
-        pathInput.oninput = (e) => {
-          workers[index].path = e.target.value;
-          save();
-          renderNav();
-        };
+        pathInput.oninput = (e) => { workers[index].path = e.target.value; save(); renderNav(); };
 
         const delBtn = document.createElement("button");
         delBtn.textContent = "×";
-        delBtn.style.background = "#dc3545";
-        delBtn.onclick = () => {
-          workers.splice(index, 1);
-          save();
-          renderNav();
-        };
+        delBtn.className = "delete";
+        delBtn.onclick = () => { workers.splice(index,1); save(); renderNav(); };
 
         nav.append(nameInput, pathInput, delBtn, document.createElement("br"));
 
-        // ==== 实时预览部分 ====
+        // 预览导航
         const link = document.createElement("a");
         link.textContent = item.name;
         link.href = item.path;
@@ -146,17 +88,37 @@
       save();
     }
 
-    // 添加新导航
+    // 添加导航
     addBtn.onclick = () => {
-      if (newName.value && newPath.value) {
+      if(newName.value && newPath.value) {
         workers.push({ name: newName.value, path: newPath.value });
-        newName.value = "";
-        newPath.value = "";
-        save();
+        newName.value = ""; newPath.value = "";
         renderNav();
-      } else {
-        alert("请填写完整");
-      }
+      } else { alert("请填写完整信息"); }
+    };
+
+    // 导出 JSON
+    exportBtn.onclick = () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(workers, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", "nav.json");
+      dlAnchor.click();
+    };
+
+    // 导入 JSON
+    importFile.onchange = (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const json = JSON.parse(event.target.result);
+          if(Array.isArray(json)) { workers = json; save(); renderNav(); }
+          else { alert("JSON 格式不正确"); }
+        } catch(err) { alert("解析 JSON 失败"); }
+      };
+      reader.readAsText(file);
     };
 
     renderNav();
