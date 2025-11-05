@@ -1,145 +1,280 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>导航管理系统</title>
-  <style>
-    body { font-family: "Microsoft YaHei", sans-serif; padding: 20px; background: #f8f9fa; }
-    h2 { color: #333; margin-bottom: 10px; }
-    #preview { margin-bottom: 20px; padding: 10px; border-bottom: 2px solid #ccc; background: #fff; border-radius: 8px; }
-    #preview a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: 500; cursor: pointer; }
-    #preview a.active { color: #dc3545; font-weight: bold; }
-    #nav input { margin: 3px; width: 120px; padding: 5px; }
-    button { margin-left: 5px; padding: 5px 10px; border: none; color: #fff; border-radius: 5px; cursor: pointer; }
-    button:hover { opacity: 0.85; }
-    #editor { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    #nav .delete { background: #dc3545; }
-    #nav .save { background: #28a745; }
-    #addArea { margin-top: 10px; }
-    #importFile { margin-left: 5px; }
-  </style>
+<meta charset="UTF-8">
+<title>导航管理系统终极版 + 批量修改</title>
+<style>
+body { font-family: "Microsoft YaHei", sans-serif; padding: 20px; background: #f0f2f5; }
+h2 { color: #333; margin-bottom: 10px; }
+#searchArea { margin-bottom: 10px; }
+#searchInput { padding:5px; width:250px; }
+button.actionBtn { padding:5px 10px; margin-left:5px; cursor:pointer; border:none; border-radius:5px; color:#fff; }
+button.clearBtn{ background:#6c757d; }
+button.resetBtn{ background:#28a745; }
+button.batchIconBtn{ background:#ffc107; }
+button.batchColorBtn{ background:#17a2b8; }
+#preview { margin-bottom: 20px; padding: 10px; border-bottom: 2px solid #ccc; background: #fff; border-radius: 8px; }
+#preview a { margin-right: 10px; text-decoration: none; font-weight: 500; cursor: pointer; padding: 3px 5px; border-radius: 5px; }
+#preview a.active { border: 2px solid #007bff; font-weight: bold; }
+#nav { user-select: none; }
+.nav-item { display: flex; align-items: center; margin-bottom: 3px; padding: 5px; background: #fff; border-radius: 5px; }
+.nav-item.dragging { opacity: 0.5; }
+.nav-item input { margin-right: 5px; padding: 5px; width: 100px; }
+.nav-item input.active { border: 2px solid #007bff; }
+.nav-item input.color-input { width: 60px; }
+.nav-item button { padding: 5px 8px; border: none; color: #fff; border-radius: 5px; cursor: pointer; }
+.nav-item button.delete { background: #dc3545; }
+button#addBtn { background:#007bff; }
+button#exportBtn { background:#17a2b8; }
+#addArea { margin-top: 10px; }
+#importFile { margin-left: 5px; }
+#emojiPanel { display:none; position:absolute; background:#fff; border:1px solid #ccc; padding:5px; border-radius:5px; max-width:300px; flex-wrap:wrap; z-index:1000;}
+#emojiPanel span { cursor:pointer; font-size:18px; margin:2px; }
+#colorPicker { display:none; position:absolute; z-index:1000; }
+</style>
 </head>
 <body>
-  <h2>导航管理系统</h2>
+<h2>导航管理系统终极版 + 批量修改</h2>
 
-  <!-- 实时预览 -->
-  <div id="preview"></div>
+<div id="searchArea">
+  <input id="searchInput" placeholder="搜索导航（名称/路径/图标）">
+  <button class="actionBtn clearBtn" id="clearSearch">清空搜索</button>
+  <button class="actionBtn resetBtn" id="resetOrder">重置顺序</button>
+  <button class="actionBtn batchIconBtn" id="batchIconBtn">批量修改图标</button>
+  <button class="actionBtn batchColorBtn" id="batchColorBtn">批量修改颜色</button>
+</div>
 
-  <!-- 编辑区 -->
-  <div id="editor">
-    <div id="nav"></div>
-    <hr>
-    <div id="addArea">
-      <input id="newName" placeholder="导航名称">
-      <input id="newPath" placeholder="路径">
-      <button id="addBtn" style="background:#007bff;">添加导航</button>
-      <button id="exportBtn" style="background:#17a2b8;">导出导航</button>
-      <input type="file" id="importFile" accept=".json">
-    </div>
+<div id="preview"></div>
+
+<div id="editor">
+  <div id="nav"></div>
+  <hr>
+  <div id="addArea">
+    <input id="newName" placeholder="导航名称">
+    <input id="newPath" placeholder="路径">
+    <input id="newIcon" placeholder="图标/Emoji" readonly>
+    <input id="newColor" type="color">
+    <button id="addBtn">添加导航</button>
+    <button id="exportBtn">导出导航</button>
+    <input type="file" id="importFile" accept=".json">
   </div>
+</div>
 
-  <script>
-    // 初始化数据
-    let workers = JSON.parse(localStorage.getItem("workers")) || [
-      { name: "首页", path: "/" },
-      { name: "关于我们", path: "/about" }
-    ];
+<div id="emojiPanel"></div>
+<input type="color" id="colorPicker">
 
-    const nav = document.getElementById("nav");
-    const preview = document.getElementById("preview");
-    const addBtn = document.getElementById("addBtn");
-    const newName = document.getElementById("newName");
-    const newPath = document.getElementById("newPath");
-    const exportBtn = document.getElementById("exportBtn");
-    const importFile = document.getElementById("importFile");
+<script>
+let defaultWorkers = [
+  { name:"首页", path:"/", icon:"🏠", color:"#007bff" },
+  { name:"关于我们", path:"/about", icon:"ℹ️", color:"#17a2b8" }
+];
+let workers = JSON.parse(localStorage.getItem("workers")) || [...defaultWorkers];
 
-    let activeIndex = -1; // 当前高亮项
+const nav = document.getElementById("nav");
+const preview = document.getElementById("preview");
+const addBtn = document.getElementById("addBtn");
+const newName = document.getElementById("newName");
+const newPath = document.getElementById("newPath");
+const newIcon = document.getElementById("newIcon");
+const newColor = document.getElementById("newColor");
+const exportBtn = document.getElementById("exportBtn");
+const importFile = document.getElementById("importFile");
+const emojiPanel = document.getElementById("emojiPanel");
+const colorPicker = document.getElementById("colorPicker");
+const searchInput = document.getElementById("searchInput");
+const clearSearchBtn = document.getElementById("clearSearch");
+const resetOrderBtn = document.getElementById("resetOrder");
+const batchIconBtn = document.getElementById("batchIconBtn");
+const batchColorBtn = document.getElementById("batchColorBtn");
 
-    function save() {
-      localStorage.setItem("workers", JSON.stringify(workers));
+let activeIndex=-1;
+let dragSrcIndex=null;
+let currentIconInput=null;
+let selectedIndexes = new Set();
+
+const emojis = ["🏠","ℹ️","📄","📞","💡","🛒","⭐","⚙️","📧","🔗"];
+emojis.forEach(e=>{
+  const span = document.createElement("span");
+  span.textContent=e;
+  span.onclick=()=>{
+    if(currentIconInput){ 
+      if(batchMode){ 
+        selectedIndexes.forEach(i=>{ workers[i].icon=e; });
+      } else {
+        currentIconInput.value=e;
+      }
+      batchMode=false;
+      selectedIndexes.clear();
+      renderNav(); 
+      emojiPanel.style.display="none"; 
     }
+  };
+  emojiPanel.appendChild(span);
+});
+let batchMode=false;
 
-    function renderNav() {
-      nav.innerHTML = "";
-      preview.innerHTML = "";
+function save(){ localStorage.setItem("workers",JSON.stringify(workers)); }
 
-      workers.forEach((item, index) => {
-        // ==== 编辑区 ====
-        const nameInput = document.createElement("input");
-        nameInput.value = item.name;
-        nameInput.oninput = (e) => { workers[index].name = e.target.value; save(); renderNav(); };
+function renderNav(){
+  nav.innerHTML=""; preview.innerHTML="";
+  const keyword = searchInput.value.trim().toLowerCase();
+  const filtered = workers.filter(item=>{
+    return item.name.toLowerCase().includes(keyword) ||
+           item.path.toLowerCase().includes(keyword) ||
+           (item.icon && item.icon.toLowerCase().includes(keyword));
+  });
 
-        const pathInput = document.createElement("input");
-        pathInput.value = item.path;
-        pathInput.oninput = (e) => { workers[index].path = e.target.value; save(); renderNav(); };
+  filtered.forEach((item,index)=>{
+    const realIndex = workers.indexOf(item);
+    const div=document.createElement("div");
+    div.className="nav-item";
+    div.draggable=true;
 
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "×";
-        delBtn.className = "delete";
-        delBtn.onclick = () => { 
-          workers.splice(index,1); 
-          if(activeIndex===index) activeIndex=-1;
-          save(); 
-          renderNav(); 
-        };
-
-        nav.append(nameInput, pathInput, delBtn, document.createElement("br"));
-
-        // ==== 预览区 ====
-        const link = document.createElement("a");
-        link.textContent = item.name;
-        link.href = "#"; // 阻止跳转
-        link.className = (activeIndex===index) ? "active" : "";
-        link.onclick = (e) => {
-          e.preventDefault();
-          activeIndex = index;
-          renderNav();
-        };
-        preview.appendChild(link);
-      });
-
-      save();
-    }
-
-    // 添加导航
-    addBtn.onclick = () => {
-      if(newName.value && newPath.value) {
-        workers.push({ name: newName.value, path: newPath.value });
-        newName.value = ""; newPath.value = "";
-        renderNav();
-      } else { alert("请填写完整信息"); }
+    const selectCheckbox = document.createElement("input");
+    selectCheckbox.type="checkbox";
+    selectCheckbox.checked = selectedIndexes.has(realIndex);
+    selectCheckbox.onchange = e=>{
+      if(e.target.checked) selectedIndexes.add(realIndex);
+      else selectedIndexes.delete(realIndex);
     };
 
-    // 导出 JSON
-    exportBtn.onclick = () => {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(workers, null, 2));
-      const dlAnchor = document.createElement('a');
-      dlAnchor.setAttribute("href", dataStr);
-      dlAnchor.setAttribute("download", "nav.json");
-      dlAnchor.click();
+    const nameInput=document.createElement("input");
+    nameInput.value=item.name;
+    nameInput.className=(activeIndex===realIndex)?"active":"";
+    nameInput.oninput=e=>{ workers[realIndex].name=e.target.value; save(); renderNav(); };
+
+    const pathInput=document.createElement("input");
+    pathInput.value=item.path;
+    pathInput.className=(activeIndex===realIndex)?"active":"";
+    pathInput.oninput=e=>{ workers[realIndex].path=e.target.value; save(); renderNav(); };
+
+    const iconInput=document.createElement("input");
+    iconInput.value=item.icon||"";
+    iconInput.readOnly=true;
+    iconInput.className=(activeIndex===realIndex)?"active":"";
+    iconInput.onclick=e=>{
+      currentIconInput=iconInput;
+      emojiPanel.style.top=(iconInput.getBoundingClientRect().bottom+window.scrollY)+"px";
+      emojiPanel.style.left=(iconInput.getBoundingClientRect().left+window.scrollX)+"px";
+      emojiPanel.style.display="flex";
     };
 
-    // 导入 JSON
-    importFile.onchange = (e) => {
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const json = JSON.parse(event.target.result);
-          if(Array.isArray(json)) { 
-            workers = json; 
-            save(); 
-            renderNav(); 
-            alert("导入成功！"); 
-          }
-          else { alert("JSON 格式不正确"); }
-        } catch(err) { alert("解析 JSON 失败"); }
-      };
-      reader.readAsText(file);
-    };
+    const colorInput=document.createElement("input");
+    colorInput.type="color";
+    colorInput.value=item.color||"#007bff";
+    colorInput.className="color-input";
+    colorInput.oninput=e=>{ workers[realIndex].color=e.target.value; save(); renderNav(); };
 
+    const delBtn=document.createElement("button");
+    delBtn.textContent="×";
+    delBtn.className="delete";
+    delBtn.onclick=()=>{ workers.splice(realIndex,1); selectedIndexes.delete(realIndex); if(activeIndex===realIndex) activeIndex=-1; save(); renderNav(); };
+
+    div.append(selectCheckbox,nameInput,pathInput,iconInput,colorInput,delBtn);
+    nav.appendChild(div);
+
+    // 拖拽
+    div.addEventListener("dragstart",()=>{ dragSrcIndex=realIndex; div.classList.add("dragging"); });
+    div.addEventListener("dragend",()=>{ div.classList.remove("dragging"); });
+    div.addEventListener("dragover",e=>e.preventDefault());
+    div.addEventListener("drop",()=>{
+      if(dragSrcIndex!==null && dragSrcIndex!==realIndex){
+        const dragged=workers[dragSrcIndex];
+        workers.splice(dragSrcIndex,1);
+        workers.splice(realIndex,0,dragged);
+        dragSrcIndex=null;
+        save(); renderNav();
+      }
+    });
+
+    // 预览
+    const link=document.createElement("a");
+    link.textContent=(item.icon?item.icon+" ":"")+item.name;
+    link.href="#";
+    link.style.color=item.color||"#007bff";
+    link.className=(activeIndex===realIndex)?"active":"";
+    link.onclick=e=>{
+      e.preventDefault(); activeIndex=realIndex; renderNav();
+      const inputs=nav.getElementsByTagName("input");
+      if(inputs.length>=realIndex*5+3){
+        inputs[realIndex*5].focus();
+      }
+    };
+    preview.appendChild(link);
+  });
+  save();
+}
+
+// 添加
+addBtn.onclick=()=>{
+  if(newName.value && newPath.value){
+    workers.push({name:newName.value,path:newPath.value,icon:newIcon.value||"",color:newColor.value||"#007bff"});
+    newName.value=""; newPath.value=""; newIcon.value=""; newColor.value="#007bff";
     renderNav();
-  </script>
+  }else alert("请填写完整信息");
+};
+
+// 导出
+exportBtn.onclick=()=>{
+  const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(workers,null,2));
+  const dlAnchor=document.createElement('a');
+  dlAnchor.setAttribute("href",dataStr);
+  dlAnchor.setAttribute("download","nav.json");
+  dlAnchor.click();
+};
+
+// 导入
+importFile.onchange=e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=event=>{
+    try{
+      const json=JSON.parse(event.target.result);
+      if(Array.isArray(json)){ workers=json; save(); renderNav(); alert("导入成功！"); }
+      else alert("JSON 格式不正确");
+    }catch(err){ alert("解析 JSON 失败"); }
+  };
+  reader.readAsText(file);
+};
+
+// 搜索输入事件
+searchInput.addEventListener("input",()=>{ renderNav(); });
+
+// 清空搜索
+clearSearchBtn.onclick=()=>{ searchInput.value=""; renderNav(); };
+
+// 重置顺序
+resetOrderBtn.onclick=()=>{ workers=[...defaultWorkers]; save(); renderNav(); };
+
+// 批量修改图标
+batchIconBtn.onclick=()=>{
+  if(selectedIndexes.size===0){ alert("请先选择要修改的导航"); return; }
+  batchMode=true;
+  emojiPanel.style.display="flex";
+};
+
+// 批量修改颜色
+batchColorBtn.onclick=()=>{
+  if(selectedIndexes.size===0){ alert("请先选择要修改的导航"); return; }
+  colorPicker.style.top=(batchColorBtn.getBoundingClientRect().bottom+window.scrollY)+"px";
+  colorPicker.style.left=(batchColorBtn.getBoundingClientRect().left+window.scrollX)+"px";
+  colorPicker.click();
+};
+
+// 颜色选择事件
+colorPicker.oninput=e=>{
+  selectedIndexes.forEach(i=>{ workers[i].color=e.target.value; });
+  selectedIndexes.clear();
+  renderNav();
+};
+
+// 点击空白隐藏 emoji 面板
+document.addEventListener("click", e=>{
+  if(!emojiPanel.contains(e.target) && e.target!==currentIconInput){ emojiPanel.style.display="none"; batchMode=false; }
+});
+
+renderNav();
+</script>
 </body>
 </html>
